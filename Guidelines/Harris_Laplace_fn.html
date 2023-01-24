@@ -1,0 +1,399 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>Harris_Laplace_fn</title><meta name="generator" content="MATLAB 8.3"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2015-06-09"><meta name="DC.source" content="Harris_Laplace_fn.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">This function evaluates the most stable Harris corner points at different scales based on Laplacian of Gaussian (LOG) formulation using Scale pyramid</a></li><li><a href="#3">References:</a></li><li><a href="#4"><b>Inputs:</b></a></li><li><a href="#5"><b>Outputs:</b></a></li><li><a href="#7">This is the main loop which runs over all the images.</a></li><li><a href="#9">Part #1 , Finding Harris-corner points by thresholding <b>Harris measure,R</b></a></li><li><a href="#30">Part #2 , Checking the stability of intereset points using Laplacian of Gaussian (LOG)</a></li></ul></div><pre class="codeinput"><span class="keyword">function</span> my_final = Harris_Laplace_fn(Img, threshold_R)
+</pre><h2>This function evaluates the most stable Harris corner points at different scales based on Laplacian of Gaussian (LOG) formulation using Scale pyramid<a name="2"></a></h2><p>Written by : Sameer Sharma (ED13D007), Engg. design , IITM</p><h2>References:<a name="3"></a></h2><div><ol><li>Harris-Affine &amp; Hessian Affine: K. Mikolajczyk and C. Schmid, Scale and Affine invariant interest point detectors. In IJC V 60(1):63-86, 2004.</li><li>Digital Video Processing (<a href="http://10.6.4.152/dvp/dvp.html">http://10.6.4.152/dvp/dvp.html</a>), Computer Sc., Indian Institute of Technology, Madras.</li><li>A Comparison of Affine Region Detectors, K. Mikolajczyk, T. Tuytelaars, C. Schmid, A. Zisserman, J. Matas, F. Schaffalitzky, T. Kadir, L. Van Gool. IJCV 2005.</li><li>Scale-Space Theory in Computer Vision, T. Lindeberg. Springer</li><li><a href="http://en.wikipedia.org/wiki/Corner_detection">http://en.wikipedia.org/wiki/Corner_detection</a> The_Harris_Stephens_Plessey_Shi_Tomasi_corner_detection_algorithm</li><li>Local Invariant Feature Detectors - A Survey, T. Tuytelaars and K. Mikolajczyk. FGV 2008</li></ol></div><h2><b>Inputs:</b><a name="4"></a></h2><pre>        *Img* : 'String datatype of the current image name ( If colored,
+        convert to gray scale first)
+        *threshold_R* : Threshold on the Harris measure for corner
+        detection ( Det(M) - k* (trace(M))^2 )</pre><h2><b>Outputs:</b><a name="5"></a></h2><pre>         *my_final* : a N x 3 array with spatial cordinates and scales of
+         the computed Harris interest points</pre><p>Defining scale-levels and initial-scale(these can be further customized)</p><pre class="codeinput">levels = 12;
+sigma_initial = 1.2;
+scale_factor = 1.2;
+myPoints = [];
+my_final = [];
+</pre><h2>This is the main loop which runs over all the images.<a name="7"></a></h2><p>The loop is divided into segments such that it will be easy for the user to track the process.</p><pre class="codeinput"><span class="keyword">for</span> n = 1:levels
+</pre><p>Defining the current scale ( Sigma value for the Guassian mask)</p><pre class="codeinput">sigma = (scale_factor)^n*sigma_initial;
+</pre><h2>Part #1 , Finding Harris-corner points by thresholding <b>Harris measure,R</b><a name="9"></a></h2><p>Define a Guassian filter mask for a given value of sigma scales Making sure that the filter size is ODD with pixel of interest at the center</p><pre class="codeinput">patch_size = 6*ceil(sigma)+1;
+<span class="keyword">if</span> mod(patch_size,2) ==0;
+    patch_size = patch_size +1;
+<span class="keyword">end</span>
+</pre><p>Mask definition</p><pre class="codeinput">mask = fspecial(<span class="string">'gaussian'</span>,patch_size,sigma);
+</pre><p>Gaussian differentitation (0.7 * sigma)</p><pre class="codeinput">G1 = fspecial(<span class="string">'gaussian'</span>,patch_size,0.7*sigma);
+[Gx,Gy] = gradient(G1);
+</pre><p>Computing second order derivatives for later use( Laplacian computation)</p><pre class="codeinput">[Gxx,~] = gradient(Gx);
+[~,Gyy] = gradient(Gy);
+myImage1 = double((imread(Img)));
+myImage = filter2(mask, myImage1);
+</pre><p>Compute the gradients of the Gaussians</p><pre class="codeinput">[ro, col] = size(myImage);
+grad_x = filter2(Gx, myImage1);
+grad_y = filter2(Gy, myImage1);
+grad_xx = filter2(Gxx, myImage1);
+grad_yy = filter2(Gyy, myImage1);
+</pre><p>Assembling the Moment matrix (2 X 2)</p><pre class="codeinput">M1 = grad_x.^2;
+M2 = grad_y.^2;
+M3 = grad_x.*grad_y;
+</pre><p>Mask the three matrices using Guassian window</p><pre class="codeinput">M1_new = filter2(mask, M1);
+M2_new = filter2(mask, M2);
+M3_new = filter2(mask, M3);
+R = zeros(ro, col);
+</pre><p>Computing the equivalent to the eigen values of the moment matrix for each pixel by defining the measure R <i><b>(Szieliski) : det(M)/trace(M)</b></i> or <i>*Harris = det(M) - K*trace(M)^2</i>*, K can be taken as 0.7</p><pre class="codeinput">R = (M1_new.*M2_new - M3_new.^2)./(M1_new + M2_new);
+</pre><p>Normalize the R matrix such that the values lies [ 0 % , 100 %]</p><pre class="codeinput">R_norm = 100*(R - min(min(R)))/(max(max(R)) - min(min(R)));
+</pre><p>Thresholding based on the normalised R value</p><pre class="codeinput">myLogic = R_norm &gt; threshold_R;
+<span class="comment">% figure, imshow(myLogic);</span>
+</pre><p>Padding the boudaries</p><pre class="codeinput">myLogic(1: ceil(patch_size/2),:) = 0;
+myLogic(:,1: ceil(patch_size/2)) = 0;
+myLogic(end-ceil(patch_size/2):end,:) = 0;
+myLogic(:,end- ceil(patch_size/2):end) = 0;
+R_norm_new = R_norm.*double(myLogic);
+bound = floor(patch_size/2);
+</pre><p>Check the <i>interest point</i>, if it has attained maximum value of R as compared to the neigbours i_z and index are padded to avoid boundary problems</p><pre class="codeinput"><span class="keyword">for</span> i_z = bound + 1:ro - bound
+</pre><p>Scan row-wise of the thresholded masked Non-Zero R values</p><pre class="codeinput">    index = find(R_norm_new(i_z,:));
+</pre><p>Check if we have an interset point at that index</p><pre class="codeinput">    size_new = size(index,2);
+</pre><p>Check if the intereset point has maximum R value as compared to the neighbours</p><pre class="codeinput">    <span class="keyword">if</span> ~isempty(index) &amp;&amp; min(index)&gt; bound &amp;&amp; max(index)&lt;col - bound
+
+        <span class="keyword">for</span> check_index = 1:size_new
+</pre><pre class="codeinput">        neigbors = R_norm_new(i_z - bound:i_z +bound,<span class="keyword">...</span>
+               index(check_index)- bound:index(check_index)+<span class="keyword">...</span>
+              bound);
+         [~, colIdx] = max(max(neigbors,[],1));
+         [~, rowIdx] = max(max(neigbors,[],2));
+</pre><p>Update the final mask if it is maximum</p><pre class="codeinput">            <span class="keyword">if</span> rowIdx*colIdx ~= (bound + 1)^2
+
+            myLogic(i_z,index(check_index)) = 0;
+            R_norm_new(i_z,index(check_index)) = 0;
+            <span class="keyword">end</span>
+</pre><pre class="codeinput">        <span class="keyword">end</span>
+
+
+    <span class="keyword">end</span>
+</pre><pre class="codeinput"><span class="keyword">end</span>
+</pre><h2>Part #2 , Checking the stability of intereset points using Laplacian of Gaussian (LOG)<a name="30"></a></h2><p>Choosing the neighbours and assembling corner points for all the scales</p><pre class="codeinput">[ro1, col1] = find(myLogic);
+</pre><p>LOG of the image at a scale</p><pre class="codeinput">LOG{n} = (sigma^2)*sqrt(grad_xx.^2 + grad_yy.^2);
+L_current = LOG{n};
+</pre><p>Assembling all the potential interset points ( outputs of R threshold) in an array ( 3 X N)</p><pre class="codeinput">index_log = ro1 + (col1 - 1)*size(myLogic,1);
+myPoints{n} = [ro1, col1, sigma*ones(numel(ro1),1)];
+<span class="comment">% figure, imshow(uint8(myImage));hold on,plot(col1, ro1,'+');</span>
+</pre><p>Maximizing the LOG and choosing the final HARRIS points. for the two extreme scales ( Top and Bottom) we only have one neighbor to compare with, but for rest of the scales compare LOG accross three scales.</p><p>Uppermost scale</p><pre class="codeinput"><span class="keyword">if</span> n == 2
+</pre><pre class="codeinput">    L = LOG{1};
+    myP = myPoints{1};
+    index_check = myP(:,1) + (myP(:,2) - 1)*size(myLogic,1);
+    diff_2 = L(index_check) - L_current(index_check);
+</pre><p>Check for the maximum range</p><pre class="codeinput">    <span class="keyword">for</span> check = 1: size(myPoints{1},1)
+        <span class="keyword">if</span> diff_2(check)&gt;0
+            my_final = [my_final ; myP(check,1),myP(check,2),myP(check,3)];
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+</pre><p>All the middle range scales</p><pre class="codeinput"><span class="keyword">elseif</span> n&gt;2 &amp;&amp; n&lt;levels
+</pre><pre class="codeinput">    L_center = LOG{n-1};
+    L_up = LOG{n-2};
+    myP = myPoints{n-1};
+    index_check = myP(:,1) + (myP(:,2) - 1)*size(myLogic,1);
+    diff_down = L_center(index_check) - L_current(index_check);
+    diff_up = L_center(index_check) - L_up(index_check);
+     <span class="keyword">for</span> check = 1: size(myP,1)
+        <span class="keyword">if</span> diff_down(check)&gt;0 &amp;&amp; diff_up(check) &gt;0
+            my_final = [my_final ; myP(check,1),myP(check,2),myP(check,3)];
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+</pre><p>Bottom scale</p><pre class="codeinput"><span class="keyword">elseif</span> n==levels
+        L_up = LOG{n-1};
+        myP = myPoints{10};
+        index_check = myP(:,1) + (myP(:,2) - 1)*size(myLogic,1);
+        diff_10 = L_current(index_check) - L_up(index_check);
+    <span class="keyword">for</span> check = 1: size(myP,1)
+         <span class="keyword">if</span> diff_10(check)&gt;0
+            my_final = [my_final ; myP(check,1),myP(check,2),myP(check,3)];
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+
+<span class="keyword">end</span>
+</pre><pre class="codeinput"><span class="keyword">end</span>
+<span class="comment">% figure, imshow(uint8(imread(Img)));hold on;</span>
+<span class="comment">% plot(my_final(:,2), my_final(:,1),'r*');</span>
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2014a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+
+function my_final = Harris_Laplace_fn(Img, threshold_R)
+%% This function evaluates the most stable Harris corner points at different scales based on Laplacian of Gaussian (LOG) formulation using Scale pyramid
+% Written by : Sameer Sharma (ED13D007), Engg. design , IITM
+%% References:
+% # Harris-Affine & Hessian Affine: K. Mikolajczyk and C. Schmid, Scale 
+% and Affine invariant interest point detectors. In IJC V 60(1):63-86, 2004.
+% # Digital Video Processing (http://10.6.4.152/dvp/dvp.html),
+% Computer Sc., Indian Institute of Technology, Madras.
+% # A Comparison of Affine Region Detectors, K. Mikolajczyk, T. Tuytelaars,
+% C. Schmid, A. Zisserman, J. Matas, F. Schaffalitzky, T. Kadir, L. 
+% Van Gool. IJCV 2005.
+% # Scale-Space Theory in Computer Vision, T. Lindeberg. Springer 
+% # http://en.wikipedia.org/wiki/Corner_detection 
+% The_Harris_Stephens_Plessey_Shi_Tomasi_corner_detection_algorithm
+% # Local Invariant Feature Detectors - A Survey, T. Tuytelaars and
+% K. Mikolajczyk. FGV 2008
+
+%% *Inputs:* 
+%          *Img* : 'String datatype of the current image name ( If colored, 
+%          convert to gray scale first)
+%          *threshold_R* : Threshold on the Harris measure for corner 
+%          detection ( Det(M) - k* (trace(M))^2 ) 
+%% *Outputs:*
+%           *my_final* : a N x 3 array with spatial cordinates and scales of
+%           the computed Harris interest points
+%           
+%% 
+% Defining scale-levels and initial-scale(these can be further customized)
+levels = 12;
+sigma_initial = 1.2;
+scale_factor = 1.2;
+myPoints = [];
+my_final = [];
+
+%% This is the main loop which runs over all the images. 
+% The loop is divided into segments such that it will be easy for the user
+% to track the process.
+for n = 1:levels
+%%
+% Defining the current scale ( Sigma value for the Guassian mask) 
+sigma = (scale_factor)^n*sigma_initial; 
+%% Part #1 , Finding Harris-corner points by thresholding *Harris measure,R*
+%% 
+% Define a Guassian filter mask for a given value of sigma scales
+% Making sure that the filter size is ODD with pixel of interest at the
+% center
+patch_size = 6*ceil(sigma)+1;
+if mod(patch_size,2) ==0;
+    patch_size = patch_size +1;
+end
+%%
+% Mask definition
+mask = fspecial('gaussian',patch_size,sigma);
+%%
+% Gaussian differentitation (0.7 * sigma)
+G1 = fspecial('gaussian',patch_size,0.7*sigma);
+[Gx,Gy] = gradient(G1);
+%% 
+% Computing second order derivatives for later use( Laplacian computation)
+[Gxx,~] = gradient(Gx);
+[~,Gyy] = gradient(Gy);
+myImage1 = double((imread(Img)));
+myImage = filter2(mask, myImage1);
+
+%%
+% Compute the gradients of the Gaussians 
+[ro, col] = size(myImage);
+grad_x = filter2(Gx, myImage1);
+grad_y = filter2(Gy, myImage1);
+grad_xx = filter2(Gxx, myImage1);
+grad_yy = filter2(Gyy, myImage1);
+
+%% 
+% Assembling the Moment matrix (2 X 2)
+M1 = grad_x.^2;
+M2 = grad_y.^2;
+M3 = grad_x.*grad_y;
+
+%% 
+% Mask the three matrices using Guassian window
+M1_new = filter2(mask, M1); 
+M2_new = filter2(mask, M2); 
+M3_new = filter2(mask, M3); 
+R = zeros(ro, col);
+
+%% 
+% Computing the equivalent to the eigen values of the moment matrix for
+% each pixel by defining the measure R _*(Szieliski) : det(M)/trace(M)*_ or 
+% _*Harris = det(M) - K*trace(M)^2_*, K can be taken as 0.7
+R = (M1_new.*M2_new - M3_new.^2)./(M1_new + M2_new); 
+
+%% 
+% Normalize the R matrix such that the values lies [ 0 % , 100 %]
+R_norm = 100*(R - min(min(R)))/(max(max(R)) - min(min(R)));
+
+%% 
+% Thresholding based on the normalised R value
+myLogic = R_norm > threshold_R;
+% figure, imshow(myLogic);
+
+%% 
+% Padding the boudaries
+myLogic(1: ceil(patch_size/2),:) = 0;
+myLogic(:,1: ceil(patch_size/2)) = 0;
+myLogic(end-ceil(patch_size/2):end,:) = 0;
+myLogic(:,end- ceil(patch_size/2):end) = 0;
+R_norm_new = R_norm.*double(myLogic);
+bound = floor(patch_size/2);
+
+%% 
+% Check the _interest point_, if it has attained maximum value of R 
+% as compared to the neigbours
+% i_z and index are padded to avoid boundary problems
+for i_z = bound + 1:ro - bound 
+    
+    %%
+    % Scan row-wise of the thresholded masked Non-Zero R values
+    index = find(R_norm_new(i_z,:));
+    %%
+    % Check if we have an interset point at that index
+    size_new = size(index,2);
+    %%
+    % Check if the intereset point has maximum R value as compared to the
+    % neighbours
+    if ~isempty(index) && min(index)> bound && max(index)<col - bound
+       
+        for check_index = 1:size_new
+        neigbors = R_norm_new(i_z - bound:i_z +bound,...
+               index(check_index)- bound:index(check_index)+...
+              bound);
+         [~, colIdx] = max(max(neigbors,[],1));
+         [~, rowIdx] = max(max(neigbors,[],2));
+    
+         %%
+         % Update the final mask if it is maximum
+            if rowIdx*colIdx ~= (bound + 1)^2 
+
+            myLogic(i_z,index(check_index)) = 0;
+            R_norm_new(i_z,index(check_index)) = 0;
+            end
+      
+        end
+        
+        
+    end
+
+end
+
+%% Part #2 , Checking the stability of intereset points using Laplacian of Gaussian (LOG)
+% Choosing the neighbours and assembling corner points for all the scales
+[ro1, col1] = find(myLogic);
+%%
+% LOG of the image at a scale
+LOG{n} = (sigma^2)*sqrt(grad_xx.^2 + grad_yy.^2);
+L_current = LOG{n};
+%%
+% Assembling all the potential interset points ( outputs of R threshold) in
+% an array ( 3 X N)
+index_log = ro1 + (col1 - 1)*size(myLogic,1);
+myPoints{n} = [ro1, col1, sigma*ones(numel(ro1),1)];
+% figure, imshow(uint8(myImage));hold on,plot(col1, ro1,'+'); 
+
+%% 
+% Maximizing the LOG and choosing the final HARRIS points. for the two
+% extreme scales ( Top and Bottom) we only have one neighbor to compare
+% with, but for rest of the scales compare LOG accross three scales.
+%%
+% Uppermost scale
+if n == 2
+    L = LOG{1};
+    myP = myPoints{1};
+    index_check = myP(:,1) + (myP(:,2) - 1)*size(myLogic,1);
+    diff_2 = L(index_check) - L_current(index_check);
+    
+    %%
+    % Check for the maximum range
+    for check = 1: size(myPoints{1},1)
+        if diff_2(check)>0
+            my_final = [my_final ; myP(check,1),myP(check,2),myP(check,3)];
+        end
+    end
+    
+%%
+% All the middle range scales
+elseif n>2 && n<levels
+    L_center = LOG{n-1};
+    L_up = LOG{n-2};
+    myP = myPoints{n-1};
+    index_check = myP(:,1) + (myP(:,2) - 1)*size(myLogic,1);
+    diff_down = L_center(index_check) - L_current(index_check);
+    diff_up = L_center(index_check) - L_up(index_check);
+     for check = 1: size(myP,1)
+        if diff_down(check)>0 && diff_up(check) >0
+            my_final = [my_final ; myP(check,1),myP(check,2),myP(check,3)];
+        end 
+    end
+%% 
+% Bottom scale
+elseif n==levels
+        L_up = LOG{n-1};
+        myP = myPoints{10};
+        index_check = myP(:,1) + (myP(:,2) - 1)*size(myLogic,1);
+        diff_10 = L_current(index_check) - L_up(index_check);
+    for check = 1: size(myP,1)
+         if diff_10(check)>0
+            my_final = [my_final ; myP(check,1),myP(check,2),myP(check,3)];
+        end
+    end
+        
+end
+
+
+
+end
+% figure, imshow(uint8(imread(Img)));hold on;
+% plot(my_final(:,2), my_final(:,1),'r*'); 
+
+##### SOURCE END #####
+--></body></html>
